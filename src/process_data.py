@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def process_data(df):
+def process_data(df, settings):
     """Clean and prepare raw Google Sheets data."""
 
     df = df.copy()
@@ -74,5 +74,16 @@ def process_data(df):
     df["sleep_day_night"] = df["sleep_day_night"].map({"Yes": True, "No": False,})
     df["vitamin"] = df["vitamin"].map({"Yes": True, "No": False,})
     df["pokemon"] = df["pokemon"].map({"Yes": True, "No": False,})
+
+    if settings.get('useMonth') == 'latest':
+        print('use latest month')
+        print(df)
+        # use pandas to get the last post date and count 1 month back
+        # limit the rows to that month
+    elif settings.get('useMonth') == 'current':
+        print('use current month')
+    else:
+        print('Use month based of the name')
+    # Check current month, use the later month
 
     return df

@@ -7,11 +7,16 @@ from pathlib import Path
 class HealthAnalytic():
     def __init__(self):
         print('HealthAnalytic')
+
+        settings = {
+            'useMonth': 'latest' # latest or current or name of the month
+        }
+
         raw_data = get_data()
-        clean_data = process_data(raw_data)
+        clean_data = process_data(raw_data, settings)
 
         #fig = create_steps_chart(clean_data)
-        generate_report(clean_data)
+        #generate_report(clean_data)
 
 
 
