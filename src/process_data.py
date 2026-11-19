@@ -77,7 +77,6 @@ def process_data(df, settings):
 
     if settings.get('useMonth') == 'latest':
         print('use latest month')
-        print(df)
         # use pandas to get the last post date and count 1 month back
         # limit the rows to that month
     elif settings.get('useMonth') == 'current':

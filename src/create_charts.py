@@ -3,8 +3,21 @@ import pandas as pd
 from pathlib import Path
 
 
-def create_steps_chart(df: pd.DataFrame):
+def create_steps_chart(df: pd.DataFrame, points_data):
     """Create an interactive chart of daily steps."""
+
+    # Gruppera på datum och säg till om det saknas steg i någon dag
+
+    steps_row = points_data[points_data['activity'] == 'steps']
+    steps_goal = steps_row['goal'][1]
+    step_points = steps_row['point_at_100'][1]
+    step_total = df['steps'].sum()
+    step_goal_total = len(df[df['steps'].notna()]) * 10000
+    step_procent = round((step_total / step_goal_total) * 100, 1)
+    print('Steg i procent: ', step_procent)
+    step_total_points = round((step_points * step_procent) / 100, 1)
+    print('Steg poäng: ', step_total_points)
+
 
     chart_data = df.dropna(subset=["date", "steps"]).copy()
     chart_data = chart_data.sort_values("date")
@@ -24,7 +37,7 @@ def create_steps_chart(df: pd.DataFrame):
     )
 
     fig.add_hline(
-        y=10000,
+        y=steps_goal,
         line_dash="dash",
         annotation_text="10 000 steg",
     )
