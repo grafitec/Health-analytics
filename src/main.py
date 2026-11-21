@@ -25,7 +25,7 @@ class HealthAnalytic():
         clean_data = process_data(raw_data, settings)
 
         fig = create_steps_chart(clean_data, points_data)
-        #generate_report(clean_data)
+        generate_report(clean_data)
 
 
 

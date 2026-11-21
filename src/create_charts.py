@@ -26,14 +26,34 @@ def create_steps_chart(df: pd.DataFrame, points_data):
         chart_data,
         x="date",
         y="steps",
-        width=700,
-        height=400,
+        width=340,
+        height=230,
         markers=True,
-        title="Antal steg per dag",
-        labels={
-            "date": "Datum",
-            "steps": "Antal steg",
-        },
+    )
+    fig.update_traces(
+        line=dict(
+            shape="spline",
+            smoothing=0.5,
+            width=3
+        ),
+        marker=dict(
+            size=10
+        )
+    )
+    fig.update_xaxes(showgrid=False)
+    fig.update_yaxes(showgrid=False)
+    fig.update_xaxes(title_text="")
+    fig.update_yaxes(title_text="")
+    fig.update_xaxes(tickformat="%b %-d")
+    fig.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        template="plotly_white",
+        font=dict(
+            color="#174B70",
+            family="Arial",
+            size=18
+        ),
     )
 
     fig.add_hline(
@@ -45,12 +65,6 @@ def create_steps_chart(df: pd.DataFrame, points_data):
         y=0,
         line_dash="dash",
         annotation_text="0 steg",
-    )
-
-    fig.update_layout(
-        template="plotly_white",
-        xaxis_title="Datum",
-        yaxis_title="Steg",
     )
 
     # Export as svg and html
