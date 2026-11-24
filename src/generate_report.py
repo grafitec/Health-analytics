@@ -19,9 +19,11 @@ from reportlab.platypus import (
 from reportlab.platypus import Flowable
 from reportlab.lib import colors
 from svglib.svglib import svg2rlg
+from calculate_scores import steps
+
 
 class ChartCard(Flowable):
-    def __init__(self, svg_path, width, height, points, goal_percentage):
+    def __init__(self, svg_path, width, height, points, goal_percentage, activity_name):
         super().__init__()
 
         self.svg_path = svg_path
@@ -29,6 +31,7 @@ class ChartCard(Flowable):
         self.height = height
         self.points = points
         self.goal_percentage = goal_percentage
+        self.activity_name = activity_name
 
     def draw(self):
         canvas = self.canv
@@ -55,7 +58,7 @@ class ChartCard(Flowable):
         canvas.drawString(
             12,
             self.height - 22,
-            f"Antal steg per dag"
+            self.activity_name
         )
 
         # Adding icon
@@ -94,15 +97,46 @@ class ChartCard(Flowable):
 
         drawing.drawOn(canvas, x, y)
 
+        # Informationsvärden längst ner
+        info_y = 18
+
+        left_x = 12
+        right_x = self.width - 12
+
         canvas.setFillAlpha(1)
         canvas.setFillColor(colors.HexColor("#24415C"))
 
-        canvas.setFont("Helvetica", 10)
-        canvas.drawCentredString(
-            self.width / 2,
-            12,
-            "Du uppnådde 112% av dina mål"
+        # Värden
+        canvas.setFont("Helvetica-Bold", 16)
+
+        canvas.drawString(
+            left_x,
+            info_y + 15,
+            f"{self.goal_percentage}%"
         )
+
+        canvas.drawRightString(
+            right_x,
+            info_y + 15,
+            f"{self.points} poäng"
+        )
+
+        # Beskrivningar
+        canvas.setFillColor(colors.HexColor("#71869A"))
+        canvas.setFont("Helvetica", 8)
+
+        canvas.drawString(
+            left_x,
+            info_y,
+            "Måluppfyllelse"
+        )
+
+        canvas.drawRightString(
+            right_x,
+            info_y,
+            "Intjänade poäng"
+        )
+
 
         canvas.restoreState()
 
@@ -117,25 +151,92 @@ def draw_background(canvas, doc):
         height=A4[1]
     )
 
+def draw_header(canvas, doc):
+    canvas.saveState()
 
-def generate_report(df):
+    # Halvtransparent vit yta
+    canvas.setFillColor(colors.white)
+    canvas.setFillAlpha(0.55)
+
+    canvas.roundRect(
+        15,
+        doc.height + doc.topMargin - 770, # 80
+        doc.width + doc.leftMargin + doc.rightMargin-30,
+        800,
+        fill=1,
+        radius=20,
+        stroke=0
+    )
+    """
+    canvas.roundRect(
+        30,
+        doc.height + doc.topMargin - 95,
+        doc.width + doc.leftMargin + doc.rightMargin-60,
+        110,
+        fill=1,
+        radius=20,
+        stroke=0
+    )
+    """
+    canvas.setFillAlpha(1)
+
+    # Rubrik
+    canvas.setFillColor(colors.HexColor("#24415C"))
+    canvas.setFont("Helvetica-Bold", 24)
+
+    canvas.drawString(
+        45,
+        doc.height + doc.topMargin - 10,
+        "Hälsorapport | November"
+    )
+
+    # Underrubrik
+    canvas.setFont("Helvetica-Bold", 12)
+
+    canvas.drawString(
+        45,
+        doc.height + doc.topMargin - 30,
+        "Din hälsa · Din utveckling · Din statistik"
+    )
+
+    # Datum
+    canvas.setFont("Helvetica", 9)
+    canvas.setFillColor(colors.HexColor("#71869A"))
+
+    canvas.drawString(
+        45,
+        doc.height + doc.topMargin - 50,
+        f"Skapad {pd.Timestamp.today():%Y-%m-%d}"
+    )
+
+    # heart icon
+    heart_path = (Path(__file__).parent.parent / "src" / "icons" / "heart_icon.svg")
+    icon = svg2rlg(heart_path)
+    icon_size = 50
+    scale = icon_size / icon.width
+    icon.scale(scale, scale)
+    icon.drawOn(canvas, 500, 750)
+
+
+    canvas.setFillColor(colors.white)
+    canvas.setFillAlpha(0.55)
+
+
+
+    canvas.restoreState()
+
+def draw_first_page(canvas, doc):
+    draw_background(canvas, doc)
+    draw_header(canvas, doc)
+
+def generate_report(df, points_data):
     """Generate an A4 PDF report from processed training data."""
 
     output_dir = (Path(__file__).parent.parent / "reports")
     pdf_path = output_dir / "health_report.pdf"
     svg_path = output_dir / "svg" / "steps_chart.svg"
 
-    registered_days = (
-        df["date"].nunique()
-        if "date" in df.columns
-        else 0
-    )
 
-    average_steps = (
-        df["steps"].mean()
-        if "steps" in df.columns
-        else None
-    )
 
     doc = SimpleDocTemplate(
         str(pdf_path),
@@ -178,58 +279,34 @@ def generate_report(df):
 
     story = []
 
-    story.append(Paragraph("Träningsrapport", title_style))
+    """    story.append(Paragraph("Hälsorapport", title_style))
+    story.append(
+        Paragraph(
+            "Din hälsa · Din utveckling · Din statistik",
+            section_style,
+        )
+    )
     story.append(
         Paragraph(
             f"Skapad {pd.Timestamp.today():%Y-%m-%d}",
             subtitle_style,
         )
-    )
+    )"""
 
-    story.append(Paragraph("Månadsöversikt", section_style))
+    #story.append(Paragraph("Månadsöversikt", section_style))
 
-    steps_text = (
-        f"{average_steps:,.0f}".replace(",", " ")
-        if pd.notna(average_steps)
-        else "Ingen data"
-    )
 
-    summary_data = [
-        ["Registrerade dagar", "Genomsnittliga steg"],
-        [str(registered_days), steps_text],
-    ]
 
-    summary_table = Table(
-        summary_data,
-        colWidths=[82 * mm, 82 * mm],
-    )
+    story.append(Spacer(1, 200))
 
-    summary_table.setStyle(
-        TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0),
-             colors.HexColor("#243447")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 10),
-            ("FONTSIZE", (0, 1), (-1, 1), 18),
-            ("BACKGROUND", (0, 1), (-1, 1),
-             colors.HexColor("#F0F4F8")),
-            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 10),
-            ("TOPPADDING", (0, 0), (-1, -1), 10),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-        ])
-    )
+    step_total_points, step_procent, missing_dates = steps(df, points_data, period_start="2026-11-01", period_end="2026-11-30")
 
-    story.append(summary_table)
-    story.append(Spacer(1, 8 * mm))
 
     # Add the SVG chart
     charts = Table(
         [[
-            ChartCard(svg_path, 250, 170, points=12, goal_percentage=130),
-            ChartCard(svg_path, 250, 230, points=12, goal_percentage=130),
+            ChartCard(svg_path, 250, 210, points=step_total_points, goal_percentage=step_procent, activity_name="Antal steg"),
+            ChartCard(svg_path, 250, 210, points=step_total_points, goal_percentage=step_procent, activity_name="Antal steg"),
         ]],
         colWidths=[260, 260],
     )
@@ -245,4 +322,4 @@ def generate_report(df):
     story.append(charts)
 
 
-    doc.build(story, onFirstPage=draw_background, onLaterPages=draw_background)
+    doc.build(story, onFirstPage=draw_first_page, onLaterPages=draw_background)
